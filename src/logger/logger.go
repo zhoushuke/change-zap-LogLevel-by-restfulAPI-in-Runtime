@@ -12,6 +12,24 @@ import (
 
 const (
 	port = ":9090"
+	slevel = "info"
+	changeloglevelbyhttp = "/change/level"
+	maxlogsize = 256
+	maxbackup = 10
+	maxage = 7
+	svcname = "name"
+)
+
+type Level int8
+
+const (
+	DebugLevel Level = iota - 1
+	InfoLevel
+	WarnLevel
+	ErrorLevel
+	DPanicLevel
+	PanicLevel
+	FatalLevel
 )
 
 var logger *zap.SugaredLogger
@@ -35,7 +53,7 @@ func getLoggerLevel(lvl string) zapcore.Level {
 }
 
 func init() {
-        http.HandleFunc("/handle/level", atomicLevel.ServeHTTP)
+        http.HandleFunc(changeloglevelbyhttp, atomicLevel.ServeHTTP)
         go func() {
             if err := http.ListenAndServe(port, nil); err != nil {
                 panic(err)
@@ -43,8 +61,8 @@ func init() {
         }()
 
 	filePath := getFilePath()
-	level := getLoggerLevel("info")
-	log := NewLogger(filePath, level, 256, 10, 7, true, "main")
+	level := getLoggerLevel(slevel)
+	log := NewLogger(filePath, level, maxlogsieze, maxbackup, maxage, true, svcname)
         // defer log.Sync()
 	logger = log.Sugar()
 	logger.Sync()
@@ -88,25 +106,6 @@ func newCore(filePath string, level zapcore.Level, maxSize int, maxBackups int, 
 		atomicLevel, // 日志级别
 	)
 }
-
-
-type Level int8
-
-const (
-	DebugLevel Level = iota - 1
-
-	InfoLevel
-
-	WarnLevel
-
-	ErrorLevel
-
-	DPanicLevel
-
-	PanicLevel
-
-	FatalLevel
-)
 
 func getCurrentDirectory() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
